@@ -1,0 +1,477 @@
+:root {
+  --primary-color: #3b82f6;
+  --primary-dark: #2563eb;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --remote-bg: #dcfce7;
+  --remote-color: #166534;
+  --office-bg: #fef3c7;
+  --office-color: #92400e;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --radius: 0.75rem;
+  --transition: all 0.3s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  color: var(--gray-900);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 2rem;
+}
+
+.loading-container,
+.error-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 1rem;
+  color: white;
+}
+
+.spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-box {
+  background: white;
+  padding: 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+  text-align: center;
+}
+
+.error-box h2 {
+  color: var(--danger-color);
+  margin-bottom: 1rem;
+}
+
+.error-box p {
+  color: var(--gray-700);
+  margin-bottom: 1.5rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--gray-200);
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--gray-600);
+}
+
+.week-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--gray-50);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.week-badge {
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-md);
+}
+
+.week-even {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.week-odd {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.week-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.week-number {
+  font-size: 1.1rem;
+  color: var(--gray-700);
+}
+
+.week-range {
+  font-size: 0.95rem;
+  color: var(--gray-600);
+}
+
+.navigation {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: var(--transition);
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-nav {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 2px solid var(--gray-300);
+}
+
+.btn-nav:hover {
+  background: var(--gray-200);
+  border-color: var(--gray-400);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-current {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.btn-current:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.schedule-container {
+  overflow-x: auto;
+  margin-bottom: 2rem;
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.schedule-table thead {
+  background: var(--primary-color);
+  color: white;
+}
+
+.schedule-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.5px;
+}
+
+.schedule-table tbody tr {
+  border-bottom: 1px solid var(--gray-200);
+  transition: var(--transition);
+}
+
+.schedule-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.schedule-table tbody tr:hover {
+  background: var(--gray-50);
+}
+
+.schedule-table td {
+  padding: 1rem;
+}
+
+.day-name {
+  font-weight: 700;
+  color: var(--gray-900);
+  font-size: 1.05rem;
+  text-transform: capitalize;
+}
+
+.day-date {
+  color: var(--gray-600);
+  font-size: 0.95rem;
+}
+
+.person-name {
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.person-tag {
+  background: var(--gray-100);
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.375rem;
+  display: inline-block;
+}
+
+.no-person {
+  color: var(--gray-400);
+  font-size: 1.5rem;
+}
+
+.row-remote {
+  background: rgba(220, 252, 231, 0.3);
+}
+
+.row-office {
+  background: rgba(254, 243, 199, 0.3);
+}
+
+.badge {
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-remote {
+  background: var(--remote-bg);
+  color: var(--remote-color);
+}
+
+.badge-office {
+  background: var(--office-bg);
+  color: var(--office-color);
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.btn-primary {
+  background: var(--danger-color);
+  color: white;
+  font-size: 1.05rem;
+  padding: 1rem 2rem;
+}
+
+.btn-primary:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.rules {
+  background: var(--gray-50);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  margin-bottom: 2rem;
+  border-left: 4px solid var(--primary-color);
+}
+
+.rules h3 {
+  margin-bottom: 1rem;
+  color: var(--gray-900);
+  font-size: 1.25rem;
+}
+
+.rules ul {
+  list-style: none;
+  padding: 0;
+}
+
+.rules li {
+  padding: 0.5rem 0;
+  color: var(--gray-700);
+  line-height: 1.6;
+}
+
+.sync-info {
+  text-align: center;
+  padding: 1rem;
+  background: var(--gray-50);
+  border-radius: 0.5rem;
+  margin-bottom: 2rem;
+  color: var(--gray-600);
+  font-size: 0.9rem;
+}
+
+.footer {
+  text-align: center;
+  padding-top: 2rem;
+  border-top: 2px solid var(--gray-200);
+  color: var(--gray-600);
+}
+
+.footer p {
+  margin: 0.25rem 0;
+}
+
+.version {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 1rem 0.5rem;
+  }
+
+  .container {
+    padding: 1.5rem;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .week-info {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .week-details {
+    align-items: flex-start;
+  }
+
+  .navigation {
+    flex-direction: column;
+  }
+
+  .btn-nav {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .schedule-table {
+    font-size: 0.875rem;
+  }
+
+  .schedule-table th,
+  .schedule-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .col-day,
+  .col-date {
+    display: none;
+  }
+
+  .person-tag {
+    font-size: 0.875rem;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .week-badge {
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .schedule-table {
+    font-size: 0.8rem;
+  }
+
+  .btn {
+    font-size: 0.875rem;
+    padding: 0.625rem 1rem;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.schedule-table tbody tr {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.schedule-table tbody tr:nth-child(1) { animation-delay: 0.1s; }
+.schedule-table tbody tr:nth-child(2) { animation-delay: 0.2s; }
+.schedule-table tbody tr:nth-child(3) { animation-delay: 0.3s; }
+.schedule-table tbody tr:nth-child(4) { animation-delay: 0.4s; }
+.schedule-table tbody tr:nth-child(5) { animation-delay: 0.5s; }
