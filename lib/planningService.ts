@@ -42,16 +42,11 @@ function shuffleArrayWithSeed<T>(array: T[], seed: number): T[] {
 
 /**
  * Génère le planning pour une semaine en évitant les consécutifs
- * Vérifie qui était en télétravail la semaine précédente
- */
-/**
- * Génère le planning pour une semaine en évitant les consécutifs
- * Vérifie qui était en télétravail la semaine précédente
- * GARANTIT : Maximum 1 "place réservée" par semaine
+ * GARANTIT ABSOLUMENT : Maximum 1 "place réservée" par semaine
  * GARANTIT : Personne ne télétravaille 2 semaines consécutives
  */
 async function getRotationScheduleAsync(weekNumber: number, year: number): Promise<Map<string, string>> {
-  const PEOPLE = getActivePeople(); // Récupérer les personnes actives depuis la config
+  const PEOPLE = getActivePeople();
   const availableDays = ['Mardi', 'Mercredi', 'Jeudi'];
   const seed = weekNumber + year * 1000;
   
@@ -68,7 +63,6 @@ async function getRotationScheduleAsync(weekNumber: number, year: number): Promi
       });
     }
   } else if (weekNumber === 1 && year > 2025) {
-    // Cas spécial : semaine 1 de l'année, vérifier la dernière semaine de l'année précédente
     const prevSchedule = await getScheduleFromFirebase(52, year - 1);
     if (prevSchedule) {
       prevSchedule.days.forEach(day => {
@@ -82,68 +76,114 @@ async function getRotationScheduleAsync(weekNumber: number, year: number): Promi
   // Personnes disponibles (EXCLUANT celles de la semaine précédente)
   let availablePeople = PEOPLE.filter(p => !previousWeekPeople.has(p));
   
-  // Si pas assez de personnes disponibles (ne devrait jamais arriver avec 6 personnes)
   if (availablePeople.length < 3) {
     console.warn(`Pas assez de personnes disponibles (${availablePeople.length}), utilisation de tout le monde`);
     availablePeople = [...PEOPLE];
   }
   
-  // Séparer les "places réservées" des vraies personnes PARMI LES DISPONIBLES
-  const reservedPlaces = availablePeople.filter(p => 
-    p.toLowerCase().includes('place réservée') || 
-    p.toLowerCase().includes('place reservée')
-  );
-  const realPeople = availablePeople.filter(p => 
-    !p.toLowerCase().includes('place réservée') && 
-    !p.toLowerCase().includes('place reservée')
-  );
+  // Fonction stricte pour détecter les places réservées
+  const isReservedPlace = (name: string): boolean => {
+    const lower = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return lower.includes('place reservee') || 
+           lower.includes('place reserve') ||
+           lower.includes('reserved');
+  };
   
-  // Sélectionner les personnes :
-  // 1. Maximum 1 place réservée
-  // 2. Compléter avec des vraies personnes
+  const reservedPlaces = availablePeople.filter(p => isReservedPlace(p));
+  const realPeople = availablePeople.filter(p => !isReservedPlace(p));
+  
+  console.log(`📅 Semaine ${weekNumber}: ${realPeople.length} vraies personnes, ${reservedPlaces.length} places réservées disponibles`);
+  
+  // Décider s'il y a une place réservée (50% de chance)
+  const shouldHaveReservedPlace = randomFromSeed(seed + 9999) > 0.5;
+  
   let selectedPeople: string[] = [];
   
-  // Mélanger les vraies personnes disponibles
-  const shuffledRealPeople = shuffleArrayWithSeed([...realPeople], seed);
-  
-  // Décider aléatoirement s'il y a une place réservée cette semaine (50% de chance)
-  const hasReservedPlace = randomFromSeed(seed + 9999) > 0.5 && reservedPlaces.length > 0;
-  
-  if (hasReservedPlace && reservedPlaces.length > 0) {
-    // Prendre 1 place réservée au hasard
+  if (shouldHaveReservedPlace && reservedPlaces.length > 0) {
+    // ==========================================
+    // CAS 1 : AVEC 1 PLACE RÉSERVÉE MAXIMUM
+    // ==========================================
+    
+    // Choisir UNE SEULE place réservée
     const shuffledReserved = shuffleArrayWithSeed([...reservedPlaces], seed + 1000);
     selectedPeople.push(shuffledReserved[0]);
     
-    // Compléter avec 2 vraies personnes
+    console.log(`✅ Place réservée : ${shuffledReserved[0]}`);
+    
+    // Compléter avec 2 VRAIES personnes (PAS de places réservées)
+    const shuffledRealPeople = shuffleArrayWithSeed([...realPeople], seed);
+    
     if (shuffledRealPeople.length >= 2) {
-      selectedPeople.push(...shuffledRealPeople.slice(0, 2));
+      selectedPeople.push(shuffledRealPeople[0]);
+      selectedPeople.push(shuffledRealPeople[1]);
     } else {
-      // Fallback : prendre ce qui reste
       selectedPeople.push(...shuffledRealPeople);
-      // Si toujours pas assez, prendre parmi toutes les personnes disponibles
-      const remaining = availablePeople.filter(p => !selectedPeople.includes(p));
-      const shuffledRemaining = shuffleArrayWithSeed([...remaining], seed + 2000);
-      selectedPeople.push(...shuffledRemaining.slice(0, 3 - selectedPeople.length));
+      
+      // Compléter avec d'autres vraies personnes UNIQUEMENT
+      const remainingReal = availablePeople.filter(p => 
+        !selectedPeople.includes(p) && !isReservedPlace(p)
+      );
+      
+      if (remainingReal.length > 0) {
+        const shuffledRemaining = shuffleArrayWithSeed([...remainingReal], seed + 2000);
+        selectedPeople.push(...shuffledRemaining.slice(0, 3 - selectedPeople.length));
+      }
     }
   } else {
-    // Prendre 3 vraies personnes
+    // ==========================================
+    // CAS 2 : SANS PLACE RÉSERVÉE
+    // ==========================================
+    
+    console.log(`❌ Pas de place réservée cette semaine`);
+    
+    const shuffledRealPeople = shuffleArrayWithSeed([...realPeople], seed);
+    
     if (shuffledRealPeople.length >= 3) {
-      selectedPeople.push(...shuffledRealPeople.slice(0, 3));
+      selectedPeople.push(shuffledRealPeople[0]);
+      selectedPeople.push(shuffledRealPeople[1]);
+      selectedPeople.push(shuffledRealPeople[2]);
     } else {
-      // Pas assez de vraies personnes, prendre toutes les vraies + compléter avec places réservées
       selectedPeople.push(...shuffledRealPeople);
-      const shuffledReserved = shuffleArrayWithSeed([...reservedPlaces], seed + 1000);
-      selectedPeople.push(...shuffledReserved.slice(0, 3 - selectedPeople.length));
+      
+      // Si vraiment pas assez, prendre UNE place réservée MAX
+      if (selectedPeople.length < 3 && reservedPlaces.length > 0) {
+        const shuffledReserved = shuffleArrayWithSeed([...reservedPlaces], seed + 1000);
+        selectedPeople.push(shuffledReserved[0]);
+      }
     }
   }
   
-  // Vérification finale : S'assurer qu'on a bien 3 personnes
-  if (selectedPeople.length < 3) {
-    console.warn(`Seulement ${selectedPeople.length} personnes sélectionnées, ajout de personnes aléatoires`);
-    const remaining = availablePeople.filter(p => !selectedPeople.includes(p));
-    const shuffledRemaining = shuffleArrayWithSeed([...remaining], seed + 3000);
-    selectedPeople.push(...shuffledRemaining.slice(0, 3 - selectedPeople.length));
+  // ==========================================
+  // VÉRIFICATION FINALE DE SÉCURITÉ
+  // ==========================================
+  
+  const reservedCount = selectedPeople.filter(p => isReservedPlace(p)).length;
+  
+  if (reservedCount > 1) {
+    console.error(`🚨 ERREUR CRITIQUE : ${reservedCount} places réservées détectées !`);
+    console.error(`Personnes : ${selectedPeople.join(', ')}`);
+    
+    // CORRECTION : Garder seulement la première place réservée
+    const firstReserved = selectedPeople.find(p => isReservedPlace(p));
+    selectedPeople = selectedPeople.filter(p => !isReservedPlace(p));
+    
+    if (firstReserved) {
+      selectedPeople.unshift(firstReserved);
+    }
+    
+    // Compléter pour avoir 3 personnes
+    while (selectedPeople.length < 3) {
+      const remaining = realPeople.filter(p => !selectedPeople.includes(p));
+      if (remaining.length > 0) {
+        const shuffled = shuffleArrayWithSeed([...remaining], seed + 5000);
+        selectedPeople.push(shuffled[0]);
+      } else {
+        break;
+      }
+    }
   }
+  
+  console.log(`✅ Final : ${selectedPeople.join(', ')} (${reservedCount} place(s) réservée(s))`);
   
   // Attribuer des jours aléatoires
   const shuffledDays = shuffleArrayWithSeed([...availableDays], seed + 500);
@@ -194,7 +234,6 @@ export async function generateWeekSchedule(startDate: Date): Promise<WeekSchedul
   const days: DaySchedule[] = [];
   const daysOfWeek = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
   
-  // Obtenir la rotation pour cette semaine (avec vérification anti-consécutif)
   const rotation = await getRotationScheduleAsync(weekNumber, year);
   
   for (let i = 0; i < 5; i++) {
@@ -293,24 +332,15 @@ export function getWeekRange(schedule: WeekSchedule): string {
  * ============================================
  */
 
-/**
- * Réinitialiser TOUT le planning Firebase
- */
 export async function resetAllSchedules(): Promise<void> {
   const schedulesRef = ref(database, 'schedules');
   await set(schedulesRef, null);
 }
 
-/**
- * Mettre à jour le nom d'une personne globalement
- */
 export async function updatePersonName(oldName: string, newName: string): Promise<void> {
   console.log(`Fonction disponible : Renommer ${oldName} en ${newName}`);
 }
 
-/**
- * Mettre à jour la personne en télétravail pour un jour spécifique
- */
 export async function updateDayPerson(
   schedule: WeekSchedule,
   dayIndex: number,
