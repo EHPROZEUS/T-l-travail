@@ -64,10 +64,87 @@ function generateRandomCycle(startWeek: number): Map<number, Map<string, string>
   
   const availableDays = ['Mardi', 'Mercredi', 'Jeudi'];
   
-  // Mélanger les personnes aléatoirement pour ce cycle
+  // Récupérer les personnes de la semaine PRÉCÉDENTE (semaine avant ce cycle)
+  let previousWeekPeople: Set<string> = new Set();
+  
+  if (startWeek > 1) {
+    const previousWeekNumber = startWeek - 1;
+    const previousRotation = getRotationSchedulePrevious(previousWeekNumber);
+    if (previousRotation) {
+      previousWeekPeople = new Set(Array.from(previousRotation.values()));
+    }
+  }
+  
+  // Diviser les 6 personnes en 2 groupes de 3
+  // Groupe 1 : ne contient AUCUNE personne de la semaine précédente
+  // Groupe 2 : contient les autres
+  
+  const availableForWeek1 = PEOPLE.filter(p => !previousWeekPeople.has(p));
+  const remainingPeople = PEOPLE.filter(p => previousWeekPeople.has(p));
+  
+  // Si pas assez de personnes disponibles, prendre tout le monde
+  let week1People: string[];
+  let week2People: string[];
+  
+  if (availableForWeek1.length >= 3) {
+    // Assez de personnes non-consécutives pour la semaine 1
+    const shuffled1 = shuffleArrayWithSeed([...availableForWeek1], seed);
+    week1People = shuffled1.slice(0, 3);
+    
+    // Semaine 2 : les 3 personnes restantes
+    week2People = PEOPLE.filter(p => !week1People.includes(p));
+  } else {
+    // Fallback : mélanger tout le monde
+    const shuffledAll = shuffleArrayWithSeed([...PEOPLE], seed);
+    week1People = shuffledAll.slice(0, 3);
+    week2People = shuffledAll.slice(3, 6);
+  }
+  
+  // Semaine 1 : attribuer des jours aléatoires
+  const week1Schedule = new Map<string, string>();
+  const week1Days = shuffleArrayWithSeed([...availableDays], seed + 100);
+  for (let i = 0; i < 3; i++) {
+    week1Schedule.set(week1Days[i], week1People[i]);
+  }
+  cycle.set(0, week1Schedule);
+  
+  // Semaine 2 : attribuer des jours aléatoires
+  const week2Schedule = new Map<string, string>();
+  const week2Days = shuffleArrayWithSeed([...availableDays], seed + 200);
+  for (let i = 0; i < 3; i++) {
+    week2Schedule.set(week2Days[i], week2People[i]);
+  }
+  cycle.set(1, week2Schedule);
+  
+  return cycle;
+}
+
+/**
+ * Fonction helper pour obtenir le planning d'une semaine précédente
+ * (sans modifier le cache actuel)
+ */
+function getRotationSchedulePrevious(weekNumber: number): Map<string, string> | null {
+  const cycleNumber = Math.floor((weekNumber - 1) / 2);
+  const positionInCycle = (weekNumber - 1) % 2;
+  const cycleStartWeek = cycleNumber * 2 + 1;
+  
+  // Générer temporairement ce cycle
+  const tempCycle = generateRandomCycleSimple(cycleStartWeek);
+  return tempCycle.get(positionInCycle) || null;
+}
+
+/**
+ * Version simple de génération (sans vérification de consécutif)
+ * Utilisé uniquement pour vérifier l'historique
+ */
+function generateRandomCycleSimple(startWeek: number): Map<number, Map<string, string>> {
+  const cycle = new Map<number, Map<string, string>>();
+  const seed = startWeek;
+  
+  const availableDays = ['Mardi', 'Mercredi', 'Jeudi'];
   const shuffledPeople = shuffleArrayWithSeed([...PEOPLE], seed);
   
-  // Semaine 1 : 3 premières personnes avec jours aléatoires
+  // Semaine 1
   const week1Schedule = new Map<string, string>();
   const week1Days = shuffleArrayWithSeed([...availableDays], seed + 100);
   for (let i = 0; i < 3; i++) {
@@ -75,7 +152,7 @@ function generateRandomCycle(startWeek: number): Map<number, Map<string, string>
   }
   cycle.set(0, week1Schedule);
   
-  // Semaine 2 : 3 dernières personnes avec jours aléatoires
+  // Semaine 2
   const week2Schedule = new Map<string, string>();
   const week2Days = shuffleArrayWithSeed([...availableDays], seed + 200);
   for (let i = 0; i < 3; i++) {
