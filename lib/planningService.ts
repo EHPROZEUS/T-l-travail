@@ -18,14 +18,92 @@ export interface WeekSchedule {
   lastUpdated: string;
 }
 
-// Liste des 5 personnes
+// Liste des 6 personnes
 const PEOPLE: string[] = [
   "Vincent",
   "Maurice",
   "Gilbert",
   "Place réservée",
-  "Fabien"
+  "Fabien",
+  "Place réservée 2"
 ];
+
+// Cache pour stocker le cycle généré
+let currentCycle: Map<number, Map<string, string>> | null = null;
+let currentCycleStartWeek: number | null = null;
+
+/**
+ * Fonction pour générer un nombre aléatoire avec seed (déterministe)
+ */
+function randomFromSeed(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+/**
+ * Mélanger un tableau de façon déterministe avec seed
+ */
+function shuffleArrayWithSeed<T>(array: T[], seed: number): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const random = randomFromSeed(seed + i);
+    const j = Math.floor(random * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+/**
+ * Génère un cycle complet de 2 semaines avec rotation aléatoire
+ * 6 personnes, 3 jours disponibles (Mardi, Mercredi, Jeudi)
+ * Pattern : 3 personnes par semaine, chaque personne 1 fois par cycle
+ */
+function generateRandomCycle(startWeek: number): Map<number, Map<string, string>> {
+  const cycle = new Map<number, Map<string, string>>();
+  const seed = startWeek;
+  
+  const availableDays = ['Mardi', 'Mercredi', 'Jeudi'];
+  
+  // Mélanger les personnes aléatoirement pour ce cycle
+  const shuffledPeople = shuffleArrayWithSeed([...PEOPLE], seed);
+  
+  // Semaine 1 : 3 premières personnes avec jours aléatoires
+  const week1Schedule = new Map<string, string>();
+  const week1Days = shuffleArrayWithSeed([...availableDays], seed + 100);
+  for (let i = 0; i < 3; i++) {
+    week1Schedule.set(week1Days[i], shuffledPeople[i]);
+  }
+  cycle.set(0, week1Schedule);
+  
+  // Semaine 2 : 3 dernières personnes avec jours aléatoires
+  const week2Schedule = new Map<string, string>();
+  const week2Days = shuffleArrayWithSeed([...availableDays], seed + 200);
+  for (let i = 0; i < 3; i++) {
+    week2Schedule.set(week2Days[i], shuffledPeople[i + 3]);
+  }
+  cycle.set(1, week2Schedule);
+  
+  return cycle;
+}
+
+/**
+ * Obtenir le planning pour une semaine donnée
+ */
+function getRotationSchedule(weekNumber: number): Map<string, string> {
+  // Déterminer dans quel cycle on est (cycle de 2 semaines)
+  const cycleNumber = Math.floor((weekNumber - 1) / 2);
+  const positionInCycle = (weekNumber - 1) % 2;
+  const cycleStartWeek = cycleNumber * 2 + 1;
+  
+  // Générer un nouveau cycle si nécessaire
+  if (currentCycleStartWeek !== cycleStartWeek) {
+    currentCycle = generateRandomCycle(cycleStartWeek);
+    currentCycleStartWeek = cycleStartWeek;
+  }
+  
+  // Retourner le planning de cette semaine dans le cycle
+  return currentCycle!.get(positionInCycle) || new Map();
+}
 
 export function getWeekType(date: Date): WeekType {
   const weekNumber = getWeekNumber(date);
@@ -54,34 +132,6 @@ export function getMonday(date: Date): Date {
   const day = date.getDay();
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);
   return new Date(date.setDate(diff));
-}
-
-/**
- * Rotation simple sur 5 semaines
- * Chaque personne télétravaille 1 fois toutes les 5 semaines
- * Le nombre de personnes par semaine peut varier (2 ou 3)
- */
-function getRotationSchedule(weekNumber: number): Map<string, string> {
-  const cyclePosition = (weekNumber - 1) % 5;
-  
-  // Rotation ultra-équitable : chaque personne télétravaille 2 fois sur 5 semaines
-  // Pattern : 2-2-2-2-2 = 10 jours (2 jours/personne)
-  const rotations: { [cycle: number]: { [day: string]: string } } = {
-    0: { 'Mardi': 'Vincent', 'Jeudi': 'Maurice' },                    // 2 personnes
-    1: { 'Mardi': 'Gilbert', 'Mercredi': 'Place réservée' },          // 2 personnes
-    2: { 'Mercredi': 'Fabien', 'Jeudi': 'Vincent' },                  // 2 personnes
-    3: { 'Mardi': 'Maurice', 'Jeudi': 'Gilbert' },                    // 2 personnes
-    4: { 'Mardi': 'Place réservée', 'Mercredi': 'Fabien' }            // 2 personnes
-  };
-  
-  const schedule = new Map<string, string>();
-  const rotation = rotations[cyclePosition];
-  
-  for (const day in rotation) {
-    schedule.set(day, rotation[day]);
-  }
-  
-  return schedule;
 }
 
 export function generateWeekSchedule(startDate: Date): WeekSchedule {
@@ -198,15 +248,16 @@ export function getWeekRange(schedule: WeekSchedule): string {
 export async function resetAllSchedules(): Promise<void> {
   const schedulesRef = ref(database, 'schedules');
   await set(schedulesRef, null);
+  // Réinitialiser le cache
+  currentCycle = null;
+  currentCycleStartWeek = null;
 }
 
 /**
  * Mettre à jour le nom d'une personne globalement
- * (fonction de réserve pour évolution future)
  */
 export async function updatePersonName(oldName: string, newName: string): Promise<void> {
   console.log(`Fonction disponible : Renommer ${oldName} en ${newName}`);
-  // Pourrait être implémenté pour renommer partout dans Firebase
 }
 
 /**
@@ -217,20 +268,16 @@ export async function updateDayPerson(
   dayIndex: number,
   personName: string | null
 ): Promise<WeekSchedule> {
-  // Créer une copie du planning
   const updatedSchedule = { ...schedule };
   
-  // Mettre à jour le jour spécifique
   updatedSchedule.days[dayIndex] = {
     ...updatedSchedule.days[dayIndex],
     personName: personName || '—',
     isRemote: personName !== null && personName !== ''
   };
   
-  // Mettre à jour le timestamp
   updatedSchedule.lastUpdated = new Date().toISOString();
   
-  // Sauvegarder dans Firebase
   await saveScheduleToFirebase(updatedSchedule);
   
   return updatedSchedule;

@@ -174,7 +174,7 @@ export default function Home() {
     <div className="container">
       <header className="header">
         <h1 className="title">📅 Télétravail team chiffrage</h1>
-        <p className="subtitle">Gestion automatique du télétravail - 5 personnes</p>
+        <p className="subtitle">Gestion automatique du télétravail - 6 personnes</p>
         
         {/* Admin Button */}
         <div className="admin-toggle">
@@ -340,17 +340,23 @@ export default function Home() {
         </button>
       </div>
 
-      <div className="rules">
+<div className="rules">
         <h3>📋 Règles du planning</h3>
         <ul>
           <li>
-            🔄 <strong>Rotation automatique</strong> : Cycle de 5 semaines qui se répète
+            🔄 <strong>Rotation automatique</strong> : Cycle de 2 semaines avec jours aléatoires
           </li>
           <li>
-            ⚡ <strong>Règle stricte</strong> : Personne ne télétravaille 2 semaines consécutives
+            👥 <strong>6 personnes</strong> : Vincent, Maurice, Gilbert, Place réservée, Fabien, Place réservée 2
+          </li>
+          <li>
+            ⚡ <strong>Équitable</strong> : Chaque personne télétravaille 1 fois toutes les 2 semaines
+          </li>
+          <li>
+            📅 <strong>3 personnes par semaine</strong> : Mardi, Mercredi, Jeudi
           </li>
           <li>🚫 Pas de télétravail le lundi ni le vendredi</li>
-          <li>👥 Entre 1 et 3 personnes en télétravail par semaine (selon le cycle)</li>
+          <li>🎲 Jours attribués aléatoirement à chaque nouveau cycle</li>
           <li>💾 Planning sauvegardé automatiquement dans Firebase</li>
         </ul>
       </div>
