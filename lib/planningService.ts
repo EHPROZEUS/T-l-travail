@@ -5,8 +5,6 @@ export type WeekType = 'PAIR' | 'IMPAIR';
 
 export interface Person {
   name: string;
-  assignedDay: 'MARDI' | 'MERCREDI' | 'JEUDI';
-  weekType: WeekType;
 }
 
 export interface DaySchedule {
@@ -24,13 +22,17 @@ export interface WeekSchedule {
   lastUpdated: string;
 }
 
-const PEOPLE_CONFIG: Person[] = [
-  { name: "Vincent", assignedDay: "MARDI", weekType: "PAIR" },
-  { name: "Maurice", assignedDay: "MERCREDI", weekType: "PAIR" },
-  { name: "Place réservée", assignedDay: "JEUDI", weekType: "PAIR" },
-  { name: "Gilbert", assignedDay: "MARDI", weekType: "IMPAIR" },
-  { name: "Fabien", assignedDay: "MERCREDI", weekType: "IMPAIR" }
+// Liste des 5 personnes
+const PEOPLE: string[] = [
+  "Vincent",
+  "Maurice",
+  "Gilbert",
+  "Place réservée",
+  "Fabien"
 ];
+
+// Jours de télétravail possibles (indices : 1=Mardi, 2=Mercredi, 3=Jeudi)
+const REMOTE_DAYS = [1, 2, 3]; // Mardi, Mercredi, Jeudi
 
 export function getWeekType(date: Date): WeekType {
   const weekNumber = getWeekNumber(date);
@@ -61,6 +63,35 @@ export function getMonday(date: Date): Date {
   return new Date(date.setDate(diff));
 }
 
+/**
+ * Calcule quelle personne télétravaille quel jour selon la semaine
+ * Rotation : chaque personne télétravaille 1 fois toutes les 5 semaines
+ * Aucune personne ne télétravaille 2 semaines consécutives
+ */
+function getRotationSchedule(weekNumber: number): { [dayIndex: number]: string } {
+  // Cycle de 5 semaines
+  const cyclePosition = (weekNumber - 1) % 5;
+  
+  // Définir la rotation : chaque personne a un jour différent à chaque cycle
+  const rotationMatrix: { [cycle: number]: { [dayIndex: number]: number } } = {
+    0: { 1: 0, 2: 1, 3: 2 }, // Semaine 1, 6, 11... : Vincent(Mardi), Maurice(Mercredi), Gilbert(Jeudi)
+    1: { 1: 3, 2: 4, 3: 0 }, // Semaine 2, 7, 12... : Place réservée(Mardi), Fabien(Mercredi), Vincent(Jeudi)
+    2: { 1: 1, 2: 2, 3: 3 }, // Semaine 3, 8, 13... : Maurice(Mardi), Gilbert(Mercredi), Place réservée(Jeudi)
+    3: { 1: 4, 2: 0, 3: 1 }, // Semaine 4, 9, 14... : Fabien(Mardi), Vincent(Mercredi), Maurice(Jeudi)
+    4: { 1: 2, 2: 3, 3: 4 }  // Semaine 5, 10, 15... : Gilbert(Mardi), Place réservée(Mercredi), Fabien(Jeudi)
+  };
+  
+  const schedule: { [dayIndex: number]: string } = {};
+  const rotation = rotationMatrix[cyclePosition];
+  
+  for (const dayIndex in rotation) {
+    const personIndex = rotation[dayIndex];
+    schedule[dayIndex] = PEOPLE[personIndex];
+  }
+  
+  return schedule;
+}
+
 export function generateWeekSchedule(startDate: Date): WeekSchedule {
   const monday = getMonday(new Date(startDate));
   const weekType = getWeekType(monday);
@@ -70,12 +101,15 @@ export function generateWeekSchedule(startDate: Date): WeekSchedule {
   const days: DaySchedule[] = [];
   const daysOfWeek = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
   
+  // Obtenir la rotation pour cette semaine
+  const rotation = getRotationSchedule(weekNumber);
+  
   for (let i = 0; i < 5; i++) {
     const currentDate = new Date(monday);
     currentDate.setDate(monday.getDate() + i);
     
     const dayName = daysOfWeek[i];
-    const personName = getRemotePersonForDay(i, weekType);
+    const personName = rotation[i] || null;
     
     days.push({
       date: currentDate.toISOString(),
@@ -92,23 +126,6 @@ export function generateWeekSchedule(startDate: Date): WeekSchedule {
     days,
     lastUpdated: new Date().toISOString()
   };
-}
-
-function getRemotePersonForDay(dayIndex: number, weekType: WeekType): string | null {
-  if (dayIndex === 0 || dayIndex === 4) {
-    return null;
-  }
-  
-  const dayNames = ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI'];
-  const dayName = dayNames[dayIndex];
-  
-  for (const person of PEOPLE_CONFIG) {
-    if (dayName === person.assignedDay && person.weekType === weekType) {
-      return person.name;
-    }
-  }
-  
-  return null;
 }
 
 export async function saveScheduleToFirebase(schedule: WeekSchedule): Promise<void> {

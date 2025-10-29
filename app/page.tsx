@@ -181,17 +181,19 @@ export default function Home() {
       </div>
 
 <div className="rules">
-        <h3>📋 Règles du planning</h3>
+        <h3>📋 Règles du planning - Rotation automatique</h3>
         <ul>
           <li>
-            🔄 <strong>Semaines paires</strong> : Vincent (mardi), Maurice (mercredi), Place réservée (jeudi)
+            🔄 <strong>Rotation sur 5 semaines</strong> : Chaque personne télétravaille 1 fois par cycle
           </li>
           <li>
-            🔄 <strong>Semaines impaires</strong> : Gilbert (mardi), Fabien (mercredi)
+            📅 <strong>Jours variables</strong> : Le jour de télétravail change à chaque cycle
+          </li>
+          <li>
+            ⚡ <strong>Pas de répétition</strong> : Personne ne télétravaille 2 semaines consécutives
           </li>
           <li>🚫 Pas de télétravail le lundi ni le vendredi</li>
-          <li>👤 Maximum 1 personne en télétravail par jour</li>
-          <li>⚡ Personne ne télétravaille 2 semaines consécutives</li>
+          <li>👤 3 personnes en télétravail par semaine (Mardi, Mercredi, Jeudi)</li>
           <li>💾 Planning sauvegardé automatiquement dans Firebase</li>
         </ul>
       </div>
