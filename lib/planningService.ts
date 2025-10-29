@@ -28,10 +28,6 @@ const PEOPLE: string[] = [
   "Place réservée 2"
 ];
 
-// Cache pour stocker le cycle généré
-let currentCycle: Map<number, Map<string, string>> | null = null;
-let currentCycleStartWeek: number | null = null;
-
 /**
  * Fonction pour générer un nombre aléatoire avec seed (déterministe)
  */
@@ -54,132 +50,58 @@ function shuffleArrayWithSeed<T>(array: T[], seed: number): T[] {
 }
 
 /**
- * Génère un cycle complet de 2 semaines avec rotation aléatoire
- * 6 personnes, 3 jours disponibles (Mardi, Mercredi, Jeudi)
- * Pattern : 3 personnes par semaine, chaque personne 1 fois par cycle
+ * Génère le planning pour une semaine en évitant les consécutifs
+ * Vérifie qui était en télétravail la semaine précédente
  */
-function generateRandomCycle(startWeek: number): Map<number, Map<string, string>> {
-  const cycle = new Map<number, Map<string, string>>();
-  const seed = startWeek;
-  
+async function getRotationScheduleAsync(weekNumber: number, year: number): Promise<Map<string, string>> {
   const availableDays = ['Mardi', 'Mercredi', 'Jeudi'];
+  const seed = weekNumber + year * 1000;
   
-  // Récupérer les personnes de la semaine PRÉCÉDENTE (semaine avant ce cycle)
+  // Récupérer la semaine précédente depuis Firebase
   let previousWeekPeople: Set<string> = new Set();
   
-  if (startWeek > 1) {
-    const previousWeekNumber = startWeek - 1;
-    const previousRotation = getRotationSchedulePrevious(previousWeekNumber);
-    if (previousRotation) {
-      previousWeekPeople = new Set(Array.from(previousRotation.values()));
+  if (weekNumber > 1) {
+    const prevSchedule = await getScheduleFromFirebase(weekNumber - 1, year);
+    if (prevSchedule) {
+      prevSchedule.days.forEach(day => {
+        if (day.isRemote && day.personName !== '—') {
+          previousWeekPeople.add(day.personName);
+        }
+      });
+    }
+  } else if (weekNumber === 1 && year > 2025) {
+    // Cas spécial : semaine 1 de l'année, vérifier la dernière semaine de l'année précédente
+    const prevSchedule = await getScheduleFromFirebase(52, year - 1);
+    if (prevSchedule) {
+      prevSchedule.days.forEach(day => {
+        if (day.isRemote && day.personName !== '—') {
+          previousWeekPeople.add(day.personName);
+        }
+      });
     }
   }
   
-  // Diviser les 6 personnes en 2 groupes de 3
-  // Groupe 1 : ne contient AUCUNE personne de la semaine précédente
-  // Groupe 2 : contient les autres
-  
-  const availableForWeek1 = PEOPLE.filter(p => !previousWeekPeople.has(p));
-  const remainingPeople = PEOPLE.filter(p => previousWeekPeople.has(p));
+  // Personnes disponibles (pas dans la semaine précédente)
+  let availablePeople = PEOPLE.filter(p => !previousWeekPeople.has(p));
   
   // Si pas assez de personnes disponibles, prendre tout le monde
-  let week1People: string[];
-  let week2People: string[];
-  
-  if (availableForWeek1.length >= 3) {
-    // Assez de personnes non-consécutives pour la semaine 1
-    const shuffled1 = shuffleArrayWithSeed([...availableForWeek1], seed);
-    week1People = shuffled1.slice(0, 3);
-    
-    // Semaine 2 : les 3 personnes restantes
-    week2People = PEOPLE.filter(p => !week1People.includes(p));
-  } else {
-    // Fallback : mélanger tout le monde
-    const shuffledAll = shuffleArrayWithSeed([...PEOPLE], seed);
-    week1People = shuffledAll.slice(0, 3);
-    week2People = shuffledAll.slice(3, 6);
+  if (availablePeople.length < 3) {
+    availablePeople = [...PEOPLE];
   }
   
-  // Semaine 1 : attribuer des jours aléatoires
-  const week1Schedule = new Map<string, string>();
-  const week1Days = shuffleArrayWithSeed([...availableDays], seed + 100);
+  // Sélectionner 3 personnes aléatoirement parmi les disponibles
+  const shuffledPeople = shuffleArrayWithSeed([...availablePeople], seed);
+  const selectedPeople = shuffledPeople.slice(0, 3);
+  
+  // Attribuer des jours aléatoires
+  const shuffledDays = shuffleArrayWithSeed([...availableDays], seed + 500);
+  
+  const schedule = new Map<string, string>();
   for (let i = 0; i < 3; i++) {
-    week1Schedule.set(week1Days[i], week1People[i]);
-  }
-  cycle.set(0, week1Schedule);
-  
-  // Semaine 2 : attribuer des jours aléatoires
-  const week2Schedule = new Map<string, string>();
-  const week2Days = shuffleArrayWithSeed([...availableDays], seed + 200);
-  for (let i = 0; i < 3; i++) {
-    week2Schedule.set(week2Days[i], week2People[i]);
-  }
-  cycle.set(1, week2Schedule);
-  
-  return cycle;
-}
-
-/**
- * Fonction helper pour obtenir le planning d'une semaine précédente
- * (sans modifier le cache actuel)
- */
-function getRotationSchedulePrevious(weekNumber: number): Map<string, string> | null {
-  const cycleNumber = Math.floor((weekNumber - 1) / 2);
-  const positionInCycle = (weekNumber - 1) % 2;
-  const cycleStartWeek = cycleNumber * 2 + 1;
-  
-  // Générer temporairement ce cycle
-  const tempCycle = generateRandomCycleSimple(cycleStartWeek);
-  return tempCycle.get(positionInCycle) || null;
-}
-
-/**
- * Version simple de génération (sans vérification de consécutif)
- * Utilisé uniquement pour vérifier l'historique
- */
-function generateRandomCycleSimple(startWeek: number): Map<number, Map<string, string>> {
-  const cycle = new Map<number, Map<string, string>>();
-  const seed = startWeek;
-  
-  const availableDays = ['Mardi', 'Mercredi', 'Jeudi'];
-  const shuffledPeople = shuffleArrayWithSeed([...PEOPLE], seed);
-  
-  // Semaine 1
-  const week1Schedule = new Map<string, string>();
-  const week1Days = shuffleArrayWithSeed([...availableDays], seed + 100);
-  for (let i = 0; i < 3; i++) {
-    week1Schedule.set(week1Days[i], shuffledPeople[i]);
-  }
-  cycle.set(0, week1Schedule);
-  
-  // Semaine 2
-  const week2Schedule = new Map<string, string>();
-  const week2Days = shuffleArrayWithSeed([...availableDays], seed + 200);
-  for (let i = 0; i < 3; i++) {
-    week2Schedule.set(week2Days[i], shuffledPeople[i + 3]);
-  }
-  cycle.set(1, week2Schedule);
-  
-  return cycle;
-}
-
-/**
- * Obtenir le planning pour une semaine donnée
- */
-function getRotationSchedule(weekNumber: number): Map<string, string> {
-  // Déterminer dans quel cycle on est (cycle de 2 semaines)
-  const cycleNumber = Math.floor((weekNumber - 1) / 2);
-  const positionInCycle = (weekNumber - 1) % 2;
-  const cycleStartWeek = cycleNumber * 2 + 1;
-  
-  // Générer un nouveau cycle si nécessaire
-  if (currentCycleStartWeek !== cycleStartWeek) {
-    currentCycle = generateRandomCycle(cycleStartWeek);
-    currentCycleStartWeek = cycleStartWeek;
+    schedule.set(shuffledDays[i], selectedPeople[i]);
   }
   
-  // Retourner le planning de cette semaine dans le cycle
-  return currentCycle!.get(positionInCycle) || new Map();
+  return schedule;
 }
 
 export function getWeekType(date: Date): WeekType {
@@ -211,7 +133,7 @@ export function getMonday(date: Date): Date {
   return new Date(date.setDate(diff));
 }
 
-export function generateWeekSchedule(startDate: Date): WeekSchedule {
+export async function generateWeekSchedule(startDate: Date): Promise<WeekSchedule> {
   const monday = getMonday(new Date(startDate));
   const weekType = getWeekType(monday);
   const weekNumber = getWeekNumber(monday);
@@ -220,8 +142,8 @@ export function generateWeekSchedule(startDate: Date): WeekSchedule {
   const days: DaySchedule[] = [];
   const daysOfWeek = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
   
-  // Obtenir la rotation pour cette semaine
-  const rotation = getRotationSchedule(weekNumber);
+  // Obtenir la rotation pour cette semaine (avec vérification anti-consécutif)
+  const rotation = await getRotationScheduleAsync(weekNumber, year);
   
   for (let i = 0; i < 5; i++) {
     const currentDate = new Date(monday);
@@ -291,7 +213,7 @@ export async function getOrGenerateSchedule(weekOffset: number = 0): Promise<Wee
   let schedule = await getScheduleFromFirebase(weekNumber, year);
   
   if (!schedule) {
-    schedule = generateWeekSchedule(monday);
+    schedule = await generateWeekSchedule(monday);
     await saveScheduleToFirebase(schedule);
   }
   
@@ -325,9 +247,6 @@ export function getWeekRange(schedule: WeekSchedule): string {
 export async function resetAllSchedules(): Promise<void> {
   const schedulesRef = ref(database, 'schedules');
   await set(schedulesRef, null);
-  // Réinitialiser le cache
-  currentCycle = null;
-  currentCycleStartWeek = null;
 }
 
 /**
