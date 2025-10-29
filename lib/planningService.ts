@@ -3,10 +3,6 @@ import { ref, set, get, onValue } from 'firebase/database';
 
 export type WeekType = 'PAIR' | 'IMPAIR';
 
-export interface Person {
-  name: string;
-}
-
 export interface DaySchedule {
   date: string;
   dayName: string;
@@ -61,21 +57,22 @@ export function getMonday(date: Date): Date {
 }
 
 /**
- * Calcule quelle personne télétravaille quel jour selon la semaine
- * Rotation sur 5 semaines - chaque personne télétravaille 1 fois par cycle
+ * Rotation simple sur 5 semaines
+ * Chaque personne télétravaille 1 fois toutes les 5 semaines
+ * Le nombre de personnes par semaine peut varier (2 ou 3)
  */
 function getRotationSchedule(weekNumber: number): Map<string, string> {
   // Cycle de 5 semaines (0 à 4)
   const cyclePosition = (weekNumber - 1) % 5;
   
-  // Matrice de rotation : pour chaque position du cycle, qui travaille quel jour
-  // Format : { 'Mardi': 'Personne', 'Mercredi': 'Personne', 'Jeudi': 'Personne' }
+  // Rotation : chaque personne apparaît 1 fois dans le cycle
+  // Format : { 'Jour': 'Personne' }
   const rotations: { [cycle: number]: { [day: string]: string } } = {
-    0: { 'Mardi': 'Vincent', 'Mercredi': 'Maurice', 'Jeudi': 'Gilbert' },
-    1: { 'Mardi': 'Place réservée', 'Mercredi': 'Fabien', 'Jeudi': 'Vincent' },
-    2: { 'Mardi': 'Maurice', 'Mercredi': 'Gilbert', 'Jeudi': 'Place réservée' },
-    3: { 'Mardi': 'Fabien', 'Mercredi': 'Vincent', 'Jeudi': 'Maurice' },
-    4: { 'Mardi': 'Gilbert', 'Mercredi': 'Place réservée', 'Jeudi': 'Fabien' }
+    0: { 'Mardi': 'Vincent', 'Mercredi': 'Maurice' },                    // 2 personnes
+    1: { 'Mardi': 'Gilbert', 'Jeudi': 'Place réservée' },                // 2 personnes
+    2: { 'Mercredi': 'Fabien', 'Jeudi': 'Vincent' },                     // 2 personnes
+    3: { 'Mardi': 'Maurice', 'Mercredi': 'Gilbert', 'Jeudi': 'Place réservée' }, // 3 personnes
+    4: { 'Mardi': 'Fabien' }                                             // 1 personne
   };
   
   const schedule = new Map<string, string>();
@@ -188,4 +185,54 @@ export function getWeekRange(schedule: WeekSchedule): string {
   const firstDay = formatDate(schedule.days[0].date);
   const lastDay = formatDate(schedule.days[4].date);
   return `${firstDay} - ${lastDay}`;
+}
+
+/**
+ * ============================================
+ * FONCTIONS ADMIN
+ * ============================================
+ */
+
+/**
+ * Réinitialiser TOUT le planning Firebase
+ */
+export async function resetAllSchedules(): Promise<void> {
+  const schedulesRef = ref(database, 'schedules');
+  await set(schedulesRef, null);
+}
+
+/**
+ * Mettre à jour le nom d'une personne globalement
+ * (fonction de réserve pour évolution future)
+ */
+export async function updatePersonName(oldName: string, newName: string): Promise<void> {
+  console.log(`Fonction disponible : Renommer ${oldName} en ${newName}`);
+  // Pourrait être implémenté pour renommer partout dans Firebase
+}
+
+/**
+ * Mettre à jour la personne en télétravail pour un jour spécifique
+ */
+export async function updateDayPerson(
+  schedule: WeekSchedule,
+  dayIndex: number,
+  personName: string | null
+): Promise<WeekSchedule> {
+  // Créer une copie du planning
+  const updatedSchedule = { ...schedule };
+  
+  // Mettre à jour le jour spécifique
+  updatedSchedule.days[dayIndex] = {
+    ...updatedSchedule.days[dayIndex],
+    personName: personName || '—',
+    isRemote: personName !== null && personName !== ''
+  };
+  
+  // Mettre à jour le timestamp
+  updatedSchedule.lastUpdated = new Date().toISOString();
+  
+  // Sauvegarder dans Firebase
+  await saveScheduleToFirebase(updatedSchedule);
+  
+  return updatedSchedule;
 }
