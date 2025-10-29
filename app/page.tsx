@@ -180,20 +180,18 @@ export default function Home() {
         </button>
       </div>
 
-      <div className="rules">
+<div className="rules">
         <h3>📋 Règles du planning</h3>
         <ul>
           <li>
-            ✅ <strong>Gilbert</strong> : télétravail fixe le mercredi (toutes les semaines)
+            🔄 <strong>Semaines paires</strong> : Vincent (mardi), Maurice (mercredi), Place réservée (jeudi)
           </li>
           <li>
-            🔄 <strong>Semaines paires</strong> : Vincent (mardi) et Maurice (jeudi)
-          </li>
-          <li>
-            🔄 <strong>Semaines impaires</strong> : Place réservée (mardi) et Fabien (jeudi)
+            🔄 <strong>Semaines impaires</strong> : Gilbert (mardi), Fabien (mercredi)
           </li>
           <li>🚫 Pas de télétravail le lundi ni le vendredi</li>
           <li>👤 Maximum 1 personne en télétravail par jour</li>
+          <li>⚡ Personne ne télétravaille 2 semaines consécutives</li>
           <li>💾 Planning sauvegardé automatiquement dans Firebase</li>
         </ul>
       </div>

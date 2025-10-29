@@ -6,7 +6,7 @@ export type WeekType = 'PAIR' | 'IMPAIR';
 export interface Person {
   name: string;
   assignedDay: 'MARDI' | 'MERCREDI' | 'JEUDI';
-  weekType: WeekType | null;
+  weekType: WeekType;
 }
 
 export interface DaySchedule {
@@ -25,11 +25,11 @@ export interface WeekSchedule {
 }
 
 const PEOPLE_CONFIG: Person[] = [
-  { name: "Gilbert", assignedDay: "MERCREDI", weekType: null },
   { name: "Vincent", assignedDay: "MARDI", weekType: "PAIR" },
-  { name: "Maurice", assignedDay: "JEUDI", weekType: "PAIR" },
-  { name: "Place réservée", assignedDay: "MARDI", weekType: "IMPAIR" },
-  { name: "Fabien", assignedDay: "JEUDI", weekType: "IMPAIR" }
+  { name: "Maurice", assignedDay: "MERCREDI", weekType: "PAIR" },
+  { name: "Place réservée", assignedDay: "JEUDI", weekType: "PAIR" },
+  { name: "Gilbert", assignedDay: "MARDI", weekType: "IMPAIR" },
+  { name: "Fabien", assignedDay: "MERCREDI", weekType: "IMPAIR" }
 ];
 
 export function getWeekType(date: Date): WeekType {
@@ -103,10 +103,6 @@ function getRemotePersonForDay(dayIndex: number, weekType: WeekType): string | n
   const dayName = dayNames[dayIndex];
   
   for (const person of PEOPLE_CONFIG) {
-    if (person.name === "Gilbert" && dayName === person.assignedDay) {
-      return person.name;
-    }
-    
     if (dayName === person.assignedDay && person.weekType === weekType) {
       return person.name;
     }
