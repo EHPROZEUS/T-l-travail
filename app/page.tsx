@@ -12,6 +12,7 @@ import {
   updateDayPerson
 } from '../lib/planningService';
 import { getActivePeopleCount, PEOPLE_CONFIG } from '../lib/config';
+import { getHoliday } from '../lib/holidays';
 import { exportToPDF } from '../lib/pdfExport';
 import '../styles/globals.css';
 
@@ -268,71 +269,92 @@ export default function Home() {
             </tr>
           </thead>
           <tbody>
-            {schedule.days.map((day, index) => (
-              <tr
-                key={index}
-                className={day.isRemote ? 'row-remote' : 'row-office'}
-              >
-                <td className="day-name">{day.dayName}</td>
-                <td className="day-date">{formatDate(day.date)}</td>
-                <td className="person-name">
-                  {editingDay === index ? (
-                    <input
-                      type="text"
-                      value={newPersonName}
-                      onChange={(e) => setNewPersonName(e.target.value)}
-                      className="edit-input"
-                      placeholder="Nom ou vide"
-                      autoFocus
-                    />
-                  ) : (
-                    <>
-                      {day.personName !== '—' ? (
-                        <span className="person-tag">{day.personName}</span>
-                      ) : (
-                        <span className="no-person">—</span>
-                      )}
-                    </>
-                  )}
-                </td>
-                <td className="status-cell">
-                  <span
-                    className={`badge ${
-                      day.isRemote ? 'badge-remote' : 'badge-office'
-                    }`}
-                  >
-                    {day.isRemote ? 'À domicile' : 'Au bureau'}
-                  </span>
-                </td>
-                {isAdmin && (
-                  <td className="actions-cell">
-                    {editingDay === index ? (
-                      <>
-                        <button 
-                          onClick={handleSaveEdit} 
-                          className="btn-action btn-save"
-                        >
-                          ✓
-                        </button>
-                        <button 
-                          onClick={handleCancelEdit} 
-                          className="btn-action btn-cancel"
-                        >
-                          ✕
-                        </button>
-                      </>
-                    ) : (
-                      <button 
-                        onClick={() => handleEditDay(index, day.personName)} 
-                        className="btn-action btn-edit"
-                      >
-                        ✏️
-                      </button>
+            {schedule.days.map((day, index) => {
+              const dayDate = new Date(day.date);
+              const holiday = getHoliday(dayDate);
+              
+              return (
+                <tr
+                  key={index}
+                  className={`${day.isRemote ? 'row-remote' : 'row-office'} ${holiday ? 'row-holiday' : ''}`}
+                >
+                  <td className="day-name">
+                    {day.dayName}
+                    {holiday && (
+                      <span className="holiday-indicator" title={holiday.name}>
+                        {' '}{holiday.emoji}
+                      </span>
                     )}
                   </td>
-                )}
-              </tr>
-            ))}
+                  <td className="day-date">
+                    {formatDate(day.date)}
+                    {holiday && (
+                      <div className="holiday-name">{holiday.name}</div>
+                    )}
+                  </td>
+                  <td className="person-name">
+                    {editingDay === index ? (
+                      <input
+                        type="text"
+                        value={newPersonName}
+                        onChange={(e) => setNewPersonName(e.target.value)}
+                        className="edit-input"
+                        placeholder="Nom ou vide"
+                        autoFocus
+                      />
+                    ) : (
+                      <>
+                        {day.personName !== '—' ? (
+                          <span className="person-tag">{day.personName}</span>
+                        ) : (
+                          <span className="no-person">
+                            {holiday ? `${holiday.emoji} Férié` : '—'}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </td>
+                  <td className="status-cell">
+                    <span
+                      className={`badge ${
+                        holiday ? 'badge-holiday' :
+                        day.isRemote ? 'badge-remote' : 'badge-office'
+                      }`}
+                    >
+                      {holiday ? '🎉 Jour férié' : 
+                       day.isRemote ? 'À domicile' : 'Au bureau'}
+                    </span>
+                  </td>
+                  {isAdmin && (
+                    <td className="actions-cell">
+                      {editingDay === index ? (
+                        <>
+                          <button 
+                            onClick={handleSaveEdit} 
+                            className="btn-action btn-save"
+                          >
+                            ✓
+                          </button>
+                          <button 
+                            onClick={handleCancelEdit} 
+                            className="btn-action btn-cancel"
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <button 
+                          onClick={() => handleEditDay(index, day.personName)} 
+                          className="btn-action btn-edit"
+                        >
+                          ✏️
+                        </button>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -364,6 +386,7 @@ export default function Home() {
           <li>💾 Planning sauvegardé automatiquement dans Firebase</li>
           <li>🕐 Respect des horaires : 8h-17h OU 9h-18h avec 1h de pause déjeuner 🍽️</li>
           <li>🎯 Objectif : Minimum 20 devis par jour (quand les conditions le permettent)</li>
+          <li>🎉 Jours fériés français automatiquement détectés</li>
         </ul>
       </div>
 

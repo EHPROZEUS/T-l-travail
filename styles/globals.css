@@ -635,3 +635,61 @@ body {
     display: none;
   }
 }
+/* ============================================
+   JOURS FÉRIÉS
+   ============================================ */
+
+.row-holiday {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+  font-weight: 600;
+}
+
+.holiday-indicator {
+  font-size: 1.3rem;
+  margin-left: 0.5rem;
+  display: inline-block;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.holiday-name {
+  font-size: 0.85rem;
+  color: var(--warning-color);
+  font-weight: 600;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+.badge-holiday {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white;
+  font-weight: 700;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@media (max-width: 768px) {
+  .holiday-indicator {
+    font-size: 1.1rem;
+  }
+  
+  .holiday-name {
+    font-size: 0.75rem;
+  }
+}
