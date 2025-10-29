@@ -395,7 +395,9 @@ export default function Home() {
       </div>
 
       <footer className="footer">
-        <p>Application développée avec Next.js, React & Firebase</p>
+        <p className="signature">
+          Application développée par <span className="author-name">Loïc.L</span> avec Next.js, React & Firebase
+        </p>
         <p className="version">
           Version 1.0.0 • {new Date().toLocaleDateString('fr-FR')}
         </p>

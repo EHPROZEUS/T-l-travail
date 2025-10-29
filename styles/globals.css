@@ -325,6 +325,7 @@ body {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
+
 .rules {
   background: var(--gray-50);
   padding: 1.5rem;
@@ -635,6 +636,7 @@ body {
     display: none;
   }
 }
+
 /* ============================================
    JOURS FÉRIÉS
    ============================================ */
@@ -691,5 +693,44 @@ body {
   
   .holiday-name {
     font-size: 0.75rem;
+  }
+}
+
+/* ============================================
+   SIGNATURE PERSONNALISÉE - VARIANTE 3
+   ============================================ */
+
+.footer .signature {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.author-name {
+  font-family: 'Tangerine', cursive;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #2563eb;
+  border-bottom: 2px solid #2563eb;
+  padding-bottom: 2px;
+  display: inline-block;
+  margin: 0 0.3rem;
+}
+
+/* Mode sombre pour la signature */
+@media (prefers-color-scheme: dark) {
+  .author-name {
+    color: #60a5fa;
+    border-bottom-color: #60a5fa;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .author-name {
+    font-size: 2rem;
+  }
+  
+  .footer .signature {
+    font-size: 1rem;
   }
 }
