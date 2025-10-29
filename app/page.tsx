@@ -362,6 +362,8 @@ export default function Home() {
           <li>🚫 Pas de télétravail le lundi ni le vendredi</li>
           <li>🎲 Jours attribués aléatoirement à chaque semaine</li>
           <li>💾 Planning sauvegardé automatiquement dans Firebase</li>
+          <li>🕐 Respect des horaires : 8h-17h OU 9h-18h avec 1h de pause déjeuner 🍽️</li>
+          <li>🎯 Objectif : Minimum 20 devis par jour (quand les conditions le permettent)</li>
         </ul>
       </div>
 

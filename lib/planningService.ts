@@ -44,6 +44,12 @@ function shuffleArrayWithSeed<T>(array: T[], seed: number): T[] {
  * Génère le planning pour une semaine en évitant les consécutifs
  * Vérifie qui était en télétravail la semaine précédente
  */
+/**
+ * Génère le planning pour une semaine en évitant les consécutifs
+ * Vérifie qui était en télétravail la semaine précédente
+ * GARANTIT : Maximum 1 "place réservée" par semaine
+ * GARANTIT : Personne ne télétravaille 2 semaines consécutives
+ */
 async function getRotationScheduleAsync(weekNumber: number, year: number): Promise<Map<string, string>> {
   const PEOPLE = getActivePeople(); // Récupérer les personnes actives depuis la config
   const availableDays = ['Mardi', 'Mercredi', 'Jeudi'];
@@ -73,23 +79,77 @@ async function getRotationScheduleAsync(weekNumber: number, year: number): Promi
     }
   }
   
-  // Personnes disponibles (pas dans la semaine précédente)
+  // Personnes disponibles (EXCLUANT celles de la semaine précédente)
   let availablePeople = PEOPLE.filter(p => !previousWeekPeople.has(p));
   
-  // Si pas assez de personnes disponibles, prendre tout le monde
+  // Si pas assez de personnes disponibles (ne devrait jamais arriver avec 6 personnes)
   if (availablePeople.length < 3) {
+    console.warn(`Pas assez de personnes disponibles (${availablePeople.length}), utilisation de tout le monde`);
     availablePeople = [...PEOPLE];
   }
   
-  // Sélectionner 3 personnes aléatoirement parmi les disponibles
-  const shuffledPeople = shuffleArrayWithSeed([...availablePeople], seed);
-  const selectedPeople = shuffledPeople.slice(0, 3);
+  // Séparer les "places réservées" des vraies personnes PARMI LES DISPONIBLES
+  const reservedPlaces = availablePeople.filter(p => 
+    p.toLowerCase().includes('place réservée') || 
+    p.toLowerCase().includes('place reservée')
+  );
+  const realPeople = availablePeople.filter(p => 
+    !p.toLowerCase().includes('place réservée') && 
+    !p.toLowerCase().includes('place reservée')
+  );
+  
+  // Sélectionner les personnes :
+  // 1. Maximum 1 place réservée
+  // 2. Compléter avec des vraies personnes
+  let selectedPeople: string[] = [];
+  
+  // Mélanger les vraies personnes disponibles
+  const shuffledRealPeople = shuffleArrayWithSeed([...realPeople], seed);
+  
+  // Décider aléatoirement s'il y a une place réservée cette semaine (50% de chance)
+  const hasReservedPlace = randomFromSeed(seed + 9999) > 0.5 && reservedPlaces.length > 0;
+  
+  if (hasReservedPlace && reservedPlaces.length > 0) {
+    // Prendre 1 place réservée au hasard
+    const shuffledReserved = shuffleArrayWithSeed([...reservedPlaces], seed + 1000);
+    selectedPeople.push(shuffledReserved[0]);
+    
+    // Compléter avec 2 vraies personnes
+    if (shuffledRealPeople.length >= 2) {
+      selectedPeople.push(...shuffledRealPeople.slice(0, 2));
+    } else {
+      // Fallback : prendre ce qui reste
+      selectedPeople.push(...shuffledRealPeople);
+      // Si toujours pas assez, prendre parmi toutes les personnes disponibles
+      const remaining = availablePeople.filter(p => !selectedPeople.includes(p));
+      const shuffledRemaining = shuffleArrayWithSeed([...remaining], seed + 2000);
+      selectedPeople.push(...shuffledRemaining.slice(0, 3 - selectedPeople.length));
+    }
+  } else {
+    // Prendre 3 vraies personnes
+    if (shuffledRealPeople.length >= 3) {
+      selectedPeople.push(...shuffledRealPeople.slice(0, 3));
+    } else {
+      // Pas assez de vraies personnes, prendre toutes les vraies + compléter avec places réservées
+      selectedPeople.push(...shuffledRealPeople);
+      const shuffledReserved = shuffleArrayWithSeed([...reservedPlaces], seed + 1000);
+      selectedPeople.push(...shuffledReserved.slice(0, 3 - selectedPeople.length));
+    }
+  }
+  
+  // Vérification finale : S'assurer qu'on a bien 3 personnes
+  if (selectedPeople.length < 3) {
+    console.warn(`Seulement ${selectedPeople.length} personnes sélectionnées, ajout de personnes aléatoires`);
+    const remaining = availablePeople.filter(p => !selectedPeople.includes(p));
+    const shuffledRemaining = shuffleArrayWithSeed([...remaining], seed + 3000);
+    selectedPeople.push(...shuffledRemaining.slice(0, 3 - selectedPeople.length));
+  }
   
   // Attribuer des jours aléatoires
   const shuffledDays = shuffleArrayWithSeed([...availableDays], seed + 500);
   
   const schedule = new Map<string, string>();
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < Math.min(3, selectedPeople.length); i++) {
     schedule.set(shuffledDays[i], selectedPeople[i]);
   }
   
