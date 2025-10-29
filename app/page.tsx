@@ -14,7 +14,7 @@ import {
 import { exportToPDF } from '../lib/pdfExport';
 import '../styles/globals.css';
 
-const ADMIN_CODE = '2024'; // Changez ce code selon vos besoins
+const ADMIN_CODE = '120698'; // Changez ce code selon vos besoins
 
 export default function Home() {
   const [schedule, setSchedule] = useState<WeekSchedule | null>(null);

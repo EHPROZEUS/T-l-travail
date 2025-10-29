@@ -62,17 +62,16 @@ export function getMonday(date: Date): Date {
  * Le nombre de personnes par semaine peut varier (2 ou 3)
  */
 function getRotationSchedule(weekNumber: number): Map<string, string> {
-  // Cycle de 5 semaines (0 à 4)
   const cyclePosition = (weekNumber - 1) % 5;
   
-  // Rotation : chaque personne apparaît 1 fois dans le cycle
-  // Format : { 'Jour': 'Personne' }
+  // Rotation ultra-équitable : chaque personne télétravaille 2 fois sur 5 semaines
+  // Pattern : 2-2-2-2-2 = 10 jours (2 jours/personne)
   const rotations: { [cycle: number]: { [day: string]: string } } = {
-    0: { 'Mardi': 'Vincent', 'Mercredi': 'Maurice' },                    // 2 personnes
-    1: { 'Mardi': 'Gilbert', 'Jeudi': 'Place réservée' },                // 2 personnes
-    2: { 'Mercredi': 'Fabien', 'Jeudi': 'Vincent' },                     // 2 personnes
-    3: { 'Mardi': 'Maurice', 'Mercredi': 'Gilbert', 'Jeudi': 'Place réservée' }, // 3 personnes
-    4: { 'Mardi': 'Fabien' }                                             // 1 personne
+    0: { 'Mardi': 'Vincent', 'Jeudi': 'Maurice' },                    // 2 personnes
+    1: { 'Mardi': 'Gilbert', 'Mercredi': 'Place réservée' },          // 2 personnes
+    2: { 'Mercredi': 'Fabien', 'Jeudi': 'Vincent' },                  // 2 personnes
+    3: { 'Mardi': 'Maurice', 'Jeudi': 'Gilbert' },                    // 2 personnes
+    4: { 'Mardi': 'Place réservée', 'Mercredi': 'Fabien' }            // 2 personnes
   };
   
   const schedule = new Map<string, string>();
