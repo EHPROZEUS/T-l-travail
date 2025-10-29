@@ -11,6 +11,7 @@ import {
   updatePersonName,
   updateDayPerson
 } from '../lib/planningService';
+import { getActivePeopleCount, PEOPLE_CONFIG } from '../lib/config';
 import { exportToPDF } from '../lib/pdfExport';
 import '../styles/globals.css';
 
@@ -174,7 +175,9 @@ export default function Home() {
     <div className="container">
       <header className="header">
         <h1 className="title">📅 Télétravail team chiffrage</h1>
-        <p className="subtitle">Gestion automatique du télétravail - 6 personnes</p>
+        <p className="subtitle">
+          Gestion automatique du télétravail - {getActivePeopleCount()} personnes
+        </p>
         
         {/* Admin Button */}
         <div className="admin-toggle">
@@ -340,23 +343,24 @@ export default function Home() {
         </button>
       </div>
 
-<div className="rules">
+      <div className="rules">
         <h3>📋 Règles du planning</h3>
         <ul>
           <li>
-            🔄 <strong>Rotation automatique</strong> : Cycle de 2 semaines avec jours aléatoires
+            🔄 <strong>Rotation automatique</strong> : Jours aléatoires pour chaque semaine
           </li>
           <li>
-            👥 <strong>6 personnes</strong> : Vincent, Maurice, Gilbert, Place réservée, Fabien, Place réservée 2
+            👥 <strong>{getActivePeopleCount()} personnes</strong> :{' '}
+            {PEOPLE_CONFIG.filter(p => p.active).map(p => p.name).join(', ')}
           </li>
           <li>
-            ⚡ <strong>Équitable</strong> : Chaque personne télétravaille 1 fois toutes les 2 semaines
+            ⚡ <strong>Équitable</strong> : Personne ne télétravaille 2 semaines consécutives
           </li>
           <li>
             📅 <strong>3 personnes par semaine</strong> : Mardi, Mercredi, Jeudi
           </li>
           <li>🚫 Pas de télétravail le lundi ni le vendredi</li>
-          <li>🎲 Jours attribués aléatoirement à chaque nouveau cycle</li>
+          <li>🎲 Jours attribués aléatoirement à chaque semaine</li>
           <li>💾 Planning sauvegardé automatiquement dans Firebase</li>
         </ul>
       </div>

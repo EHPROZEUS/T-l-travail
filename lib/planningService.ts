@@ -1,5 +1,6 @@
 import { database } from './firebase';
 import { ref, set, get, onValue } from 'firebase/database';
+import { getActivePeople, getActivePeopleCount } from './config';
 
 export type WeekType = 'PAIR' | 'IMPAIR';
 
@@ -17,16 +18,6 @@ export interface WeekSchedule {
   days: DaySchedule[];
   lastUpdated: string;
 }
-
-// Liste des 6 personnes
-const PEOPLE: string[] = [
-  "Vincent",
-  "Maurice",
-  "Gilbert",
-  "Place réservée",
-  "Fabien",
-  "Place réservée 2"
-];
 
 /**
  * Fonction pour générer un nombre aléatoire avec seed (déterministe)
@@ -54,6 +45,7 @@ function shuffleArrayWithSeed<T>(array: T[], seed: number): T[] {
  * Vérifie qui était en télétravail la semaine précédente
  */
 async function getRotationScheduleAsync(weekNumber: number, year: number): Promise<Map<string, string>> {
+  const PEOPLE = getActivePeople(); // Récupérer les personnes actives depuis la config
   const availableDays = ['Mardi', 'Mercredi', 'Jeudi'];
   const seed = weekNumber + year * 1000;
   
