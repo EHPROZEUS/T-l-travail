@@ -18,7 +18,6 @@ const FIXED_HOLIDAYS: { [key: string]: Holiday } = {
   '11-01': { name: 'Toussaint', emoji: '🕯️', isFixed: true },
   '11-11': { name: 'Armistice 1918', emoji: '🕊️', isFixed: true },
   '12-25': { name: 'Noël', emoji: '🎅', isFixed: true },
-  '12-26': { name: 'Saint-Étienne (Alsace-Moselle)', emoji: '🎄', isFixed: true }
 };
 
 /**
