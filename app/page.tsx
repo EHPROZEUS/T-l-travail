@@ -333,12 +333,12 @@ export default function Home() {
     if (window.confirm('⚠️ Êtes-vous sûr de vouloir réinitialiser le mot de passe de admin2 (Kamel) ?')) {
       try {
         // On utilise changePassword avec un bypass pour admin1
-        const { ref, update } = await import('firebase/database');
-        const { db } = await import('../lib/firebase');
-        
-        await update(ref(db, 'admins/admin2'), {
-          password: resetAdmin2Password
-        });
+const { ref, update } = await import('firebase/database');
+const { database } = await import('../lib/firebase');
+
+await update(ref(database, 'admins/admin2'), {
+  password: resetAdmin2Password
+});
 
         alert('✅ Mot de passe admin2 réinitialisé avec succès !');
         setShowResetAdmin2(false);
